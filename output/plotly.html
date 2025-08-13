@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Просмотр подгруппы МПК</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        #chart {
+            width: 100%;
+            height: 800px;
+        }
+        #debug {
+            margin: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Пример отображения подгруппы МПК 'B63B'</h1>
+    <div id="debug"></div>
+    <div id="chart"></div>
+
+    <script>
+        // функция для отображения отладочной информации
+        function debugLog(message) {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML += `<p>${new Date().toLocaleTimeString()}: ${message}</p>`;
+            console.log(message);
+        }
+
+        // основная функция преобразования данных
+        function preparePlotlyData(nodes, parentId = '', result = {ids: [], labels: [], parents: [], values: [], texts: []}) {
+            nodes.forEach(node => {
+                const cleanGroup = node.группа.replace(/\s+/g, ' ').trim();
+                const id = parentId ? `${parentId}-${cleanGroup}` : cleanGroup;
+                
+                result.ids.push(id);
+                result.labels.push(cleanGroup);
+                result.texts.push(node.расшифровка.trim());
+                result.parents.push(parentId);
+                result.values.push(1);
+                
+                if (node.подгруппы && node.подгруппы.length > 0) {
+                    preparePlotlyData(node.подгруппы, id, result);
+                }
+            });
+            return result;
+        }
+
+        // загрузка и обработка данных
+        async function loadAndVisualize() {
+            try {
+                debugLog("Начинаем загрузку данных...");
+                
+                const response = await fetch('/json_files/B63B.json');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                debugLog("Файл найден, проверяем содержимое...");
+                const data = await response.json();
+                
+                if (!Array.isArray(data)) {
+                    throw new Error("Ожидался массив в корне JSON");
+                }
+                
+                debugLog(`Успешно загружено ${data.length} основных групп`);
+                debugLog("Преобразуем данные для Plotly...");
+                
+                const {ids, labels, parents, values, texts} = preparePlotlyData(data);
+                debugLog(`Подготовлено ${ids.length} элементов`);
+                
+                // визуализация
+                const plotData = [{
+                    type: "sunburst",
+                    ids: ids,
+                    labels: labels,
+                    parents: parents,
+                    values: values,
+                    text: texts,
+                    hoverinfo: 'label+text',
+                    textinfo: 'label',
+                    insidetextorientation: 'radial',
+                    marker: {
+                        colorscale: 'Rainbow',
+                        line: {width: 1, color: 'white'}
+                    }
+                }];
+                
+                const layout = {
+                    title: 'B63B',
+                    margin: {l: 0, r: 0, b: 0, t: 40},
+                    sunburstcolorway: ['#636EFA', '#EF553B', '#00CC96'],
+                    extendsunburstcolors: true
+                };
+                
+                debugLog("Создаем диаграмму...");
+                Plotly.newPlot('chart', plotData, layout);
+                debugLog("Визуализация успешно создана!");
+                
+            } catch (error) {
+                debugLog(`ОШИБКА: ${error.message}`);
+                document.getElementById('chart').innerHTML = 
+                    `<div style="color: red; padding: 20px;">
+                        <h3>Произошла ошибка</h3>
+                        <p>${error.message}</p>
+                        <p>Проверьте консоль для подробностей (F12 → Console)</p>
+                    </div>`;
+                console.error("Детали ошибки:", error);
+            }
+        }
+
+        // запускаем процесс при загрузке страницы
+        document.addEventListener('DOMContentLoaded', loadAndVisualize);
+    </script>
+</body>
+</html>

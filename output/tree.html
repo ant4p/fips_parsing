@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Иерархическая структура данных из union.json</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        #tree-container {
+            margin-top: 20px;
+        }
+        .tree {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .tree li {
+            position: relative;
+            margin: 5px 0;
+        }
+        .tree .node {
+            cursor: pointer;
+            padding: 3px 5px;
+            border-radius: 3px;
+        }
+        .tree .node:hover {
+            background-color: #f0f0f0;
+        }
+        .tree .node::before {
+            content: "▶";
+            font-size: 10px;
+            margin-right: 5px;
+            color: #666;
+        }
+        .tree .node.expanded::before {
+            content: "▼";
+        }
+        .tree .group {
+            font-weight: bold;
+            color: #0066cc;
+        }
+        .tree .description {
+            color: #333;
+        }
+        #status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .loading {
+            color: #0066cc;
+            background-color: #e6f2ff;
+        }
+        .success {
+            color: #2e7d32;
+            background-color: #e8f5e9;
+        }
+        .error {
+            color: #c62828;
+            background-color: #ffebee;
+        }
+    </style>
+</head>
+<body>
+    <h1>Иерархическая структура данных из объединённых json файлов</h1>
+    <div id="status" class="loading">Загрузка данных из union.json...</div>
+    <div id="tree-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusDiv = document.getElementById('status');
+            const treeContainer = document.getElementById('tree-container');
+            
+            // загружаем данные из union.json
+            fetch('/union.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Ошибка HTTP: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    statusDiv.textContent = "Данные успешно загружены из union.json";
+                    statusDiv.className = "success";
+                    renderTree(data);
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки данных:', error);
+                    statusDiv.textContent = `Ошибка: ${error.message}`;
+                    statusDiv.className = "error";
+                    treeContainer.innerHTML = `
+                        <div class="error">
+                            <p>Не удалось загрузить данные из union.json</p>
+                            <p>${error.message}</p>
+                            <p>Убедитесь, что файл существует и доступен</p>
+                        </div>
+                    `;
+                });
+
+            function renderTree(data) {
+                treeContainer.innerHTML = '';
+                
+                if (!Array.isArray(data)) {
+                    treeContainer.innerHTML = '<div class="error">Ожидался массив в корне JSON</div>';
+                    return;
+                }
+                
+                const ul = document.createElement('ul');
+                ul.className = 'tree';
+                
+                data.forEach(item => {
+                    if (item.группа && item.расшифровка) {
+                        const li = createTreeNode(item);
+                        ul.appendChild(li);
+                    }
+                });
+                
+                treeContainer.appendChild(ul);
+            }
+            
+            function createTreeNode(node) {
+                const li = document.createElement('li');
+                const div = document.createElement('div');
+                div.className = 'node';
+                
+                div.innerHTML = `
+                    <span class="group">${node.группа}</span>
+                    <span class="description"> - ${node.расшифровка}</span>
+                `;
+                
+                li.appendChild(div);
+                
+                if (node.подгруппы && node.подгруппы.length > 0) {
+                    div.addEventListener('click', function() {
+                        this.classList.toggle('expanded');
+                        const childUl = this.nextElementSibling;
+                        childUl.style.display = childUl.style.display === 'none' ? 'block' : 'none';
+                    });
+                    
+                    const childUl = document.createElement('ul');
+                    childUl.style.display = 'none';
+                    
+                    node.подгруппы.forEach(child => {
+                        const childLi = createTreeNode(child);
+                        childUl.appendChild(childLi);
+                    });
+                    
+                    li.appendChild(childUl);
+                }
+                
+                return li;
+            }
+        });
+    </script>
+</body>
+</html>
