@@ -5,7 +5,7 @@ import time
 from dotenv import load_dotenv
 from parser_mpk import get_mpk_data
 from script import get_json_files, union_json_files
-from transformation_to_xlsx import convert_json_to_xlsx
+from convert_to_xlsx import convert_json_to_xlsx
 from utils import get_mpk_list_from_file, save_to_json_with_hierarchy
 
 load_dotenv()
