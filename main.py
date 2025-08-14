@@ -5,6 +5,7 @@ import time
 from dotenv import load_dotenv
 from parser_mpk import get_mpk_data
 from script import get_json_files, union_json_files
+from transformation_to_xlsx import convert_json_to_xlsx
 from utils import get_mpk_list_from_file, save_to_json_with_hierarchy
 
 load_dotenv()
@@ -18,12 +19,12 @@ def main():
     list_mpk_from_file = get_mpk_list_from_file(filename)
 
     edition = os.getenv("EDITION")
-    folder_path = os.getenv("FOLDER_WITH_JSON_PATH")
+    folder_path_json = os.getenv("FOLDER_WITH_JSON_PATH")
 
     # проходимся по списку МПК
     for subclass in list_mpk_from_file:
         # указываем место хранения и имя нового создаваемого json файла
-        output_file = f"{folder_path}{subclass}.json"
+        output_file = f"{folder_path_json}{subclass}.json"
         # используем парсер для получения данных по конкретному МПК
         mpk_data = get_mpk_data(subclass, edition)
         # сохраняем данные согласно иерархии в json формате
@@ -34,9 +35,14 @@ def main():
     output_json_file = os.getenv("OUTPUT_JSON_FILE")
 
     # получаем список всех сохранённых json файлов
-    json_file_list = get_json_files(folder_path)
+    json_file_list = get_json_files(folder_path_json)
     # объединяем в один общий json файл при необходимости
-    union_json_files(json_file_list, output_json_file, folder_path)
+    union_json_files(json_file_list, output_json_file, folder_path_json)
+
+    folder_path_xlsx = os.getenv("FOLDER_WITH_XLSX_PATH")
+
+    # преобразуем общий json файл в файлы xlsx - 3 варианта
+    convert_json_to_xlsx(output_json_file, folder_path_xlsx)
 
 
 if __name__ == "__main__":

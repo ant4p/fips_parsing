@@ -1,5 +1,5 @@
-import json
 from pathlib import Path
+import json
 
 
 # функция, принимающая путь к папке в которую попали созданные парсером json файлы
@@ -28,7 +28,7 @@ def union_json_files(json_files_list, output_json_file, folder_path):
 
     # сохраняем объединённый JSON в новый файл
     with open(f"{output_json_file}", "w", encoding="utf-8") as f_out:
-        json.dump(union_json_data, f_out, ensure_ascii=False, indent=2)
+        json.dump(union_json_data, f_out, ensure_ascii=False)
 
     print(f"Файлы успешно объединены в новый json file - {output_json_file}")
     return f"{output_json_file}"
